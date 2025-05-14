@@ -1,6 +1,6 @@
-import {create} from "zustand/react";
-import {Show} from "@/@types/show";
-import {Api} from "@/services/api";
+import { create } from "zustand";
+import { Show } from "@/@types/show";
+import { Api } from "@/services/apiClient";
 
 interface ShowStore {
     shows: Show[];
@@ -8,52 +8,46 @@ interface ShowStore {
     isLoading: boolean;
     artists: string[];
     locations: string[];
-
-    fetchShows: () => Promise<void>;
-    filterShows: (artist: string, location: string, date: string) => void;
     getShowById: (id: number) => Show | undefined;
+    fetchShows: () => Promise<void>;
 }
 
-
 export const useShowStore = create<ShowStore>((set, get) => ({
-  shows: [],
-  _shows: [],
-  isLoading: false,
-  artists: [],
-  locations: [],
-  fetchShows: async () => {
-    set({ isLoading: true });
-    try {
-      const shows = await Api.show.getAll();
-      console.log('Fetched shows in show.ts:', shows); // Отладка
-      set({ shows: shows || [], _shows: shows || [] }); // Защита от undefined
-      set({ artists: [...new Set((shows || []).map((show) => show.artist))] });
-      set({ locations: [...new Set((shows || []).map((show) => show.location))] });
-    } catch (error) {
-      console.error('Error fetching shows:', error); // Отладка ошибок
-      set({ shows: [], _shows: [] }); // Сброс при ошибке
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-    filterShows: (artist: string, location: string, date: string) => {
-        let shows = [...get()._shows]
-        if (artist) {
-            shows = shows.filter((show) => show.artist === artist);
-        }
-        if (location) {
-            shows = shows.filter((show) => show.location === location);
-        }
-        if (date) {
-            shows = shows.filter((show) => show.date === new Date(date).toLocaleDateString());
-        }
-        set({ shows })
-    },
-
+    shows: [],
+    _shows: [],
+    isLoading: false,
+    artists: [],
+    locations: [],
 
     getShowById: (id: number) => {
         return get()._shows.find((show) => show.id === id);
-    }
+    },
+
+    fetchShows: async () => {
+        if (get().isLoading || get()._shows.length > 0) {
+            if(get()._shows.length > 0) console.log("Shows already in store.");
+            return;
+        }
+        console.log("Fetching shows from API...");
+        set({ isLoading: true });
+        try {
+            const fetchedShows = await Api.show.getAll();
+            
+            const uniqueArtists = [...new Set(fetchedShows.map((show) => show.artist).filter(Boolean))];
+            const uniqueLocations = [...new Set(fetchedShows.map((show) => show.location).filter(Boolean))];
+            
+            set({ 
+                shows: fetchedShows, 
+                _shows: fetchedShows, 
+                artists: uniqueArtists, 
+                locations: uniqueLocations,
+                isLoading: false 
+            });
+            console.log("Shows fetched successfully:", fetchedShows.length);
+        } catch (error) {
+            console.error("Failed to fetch shows:", error);
+            set({ isLoading: false, shows: [], _shows: [] });
+        }
+    },
 
 }));
