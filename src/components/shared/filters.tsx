@@ -1,84 +1,97 @@
-import React, {useState} from "react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {Input} from "@/components/ui/input";
-import {cn} from "@/lib/utils";
-import {useShowStore} from "@/stores/show";
-import {Button} from "@/components/ui/button";
+"use client"
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { useShowStore } from '@/stores/show';
 
 interface Props {
     className?: string;
 }
 
 export const Filters: React.FC<Props> = ({ className }) => {
-    const { artists, locations, filterShows } = useShowStore()
-    const [ artist, setArtist ] = useState("");
-    const [ location, setLocation ] = useState("");
-    const [ date, setDate ] = useState("");
-    const onChengeArtist = ( value: string ) => {
-        setArtist(value);
-        filterShows(value, location, date);
+    const artists = useShowStore((state) => state.artists);
+    const locations = useShowStore((state) => state.locations);
+    const applyFilters = useShowStore((state) => state.filterShows);
+
+    const [selectedArtist, setSelectedArtist] = React.useState('');
+    const [selectedLocation, setSelectedLocation] = React.useState('');
+    const [selectedDate, setSelectedDate] = React.useState('');
+
+    const handleFilter = () => {
+        applyFilters({
+            artist: selectedArtist,
+            location: selectedLocation,
+            date: selectedDate
+        });
     }
-    const onChengeLocation = ( value: string ) => {
-        setLocation(value);
-        filterShows(artist, value, date);
+
+    const handleClear = () => {
+        setSelectedArtist('');
+        setSelectedLocation('');
+        setSelectedDate('');
+        applyFilters({ artist: '', location: '', date: '' });
     }
-    const onChengeDate = ( value: string ) => {
-        setDate(value);
-        filterShows(artist, location, value);
-    }
-    const onReset = () => {
-        setArtist("");
-        setLocation("");
-        setDate("");
-        filterShows("", "", "");
-    }
-        
+
 
     return (
-        <div className={cn("flex gap-4 mt-4 ", className)}>
-            <Select onValueChange={onChengeArtist}> 
-                <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Artist"/>
-                </SelectTrigger>
-                <SelectContent>
-                    {
-                        artists.map((artist) => (
-                            <SelectItem key={artist} value={artist}>
-                                {artist}
-                            </SelectItem>
-                        ))
-                    }
-                </SelectContent>
-            </Select>
+        <div className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 mb-5 items-end', className)}>
+            {}
+            <div className="flex flex-col">
+                <label htmlFor="artist-select" className="mb-1 text-sm font-medium text-gray-700">Artist</label>
+                <Select value={selectedArtist} onValueChange={setSelectedArtist} name="artist-select">
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All Artists" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {}
+                            <SelectItem value="">All Artists</SelectItem>
+                            {artists.map((artist) => (
+                                <SelectItem key={artist} value={artist}>{artist}</SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </div>
 
-            <Select onValueChange={onChengeLocation}>
-                <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Location"/>
-                </SelectTrigger>
-                <SelectContent>
-                    {
-                        locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                                {location}
-                            </SelectItem>
-                        ))
-                    }
-                </SelectContent>
-            </Select>
+            {}
+            <div className="flex flex-col">
+                <label htmlFor="location-select" className="mb-1 text-sm font-medium text-gray-700">Location</label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation} name="location-select">
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All Locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            {}
+                            <SelectItem value="">All Locations</SelectItem>
+                            {locations.map((location) => (
+                                <SelectItem key={location} value={location}>{location}</SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </div>
 
-            <Input onChange={(e) => onChengeDate(e.target.value)} type="date"/>
+            {}
+            <div className="flex flex-col">
+                <label htmlFor="date-input" className="mb-1 text-sm font-medium text-gray-700">Date</label>
+                <Input
+                    id="date-input"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    placeholder="Date"
+                />
+            </div>
 
-        
-            {
-                (artist || location || date) && <Button  onClick={onReset}>Reset</Button>
-            }
-            
+            {}
+            <div className="flex gap-3">
+                <Button onClick={handleFilter} className="w-full">Apply</Button>
+                <Button onClick={handleClear} variant={'outline'} className="w-full">Clear</Button>
+            </div>
         </div>
     );
 }
