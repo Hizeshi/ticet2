@@ -22,8 +22,8 @@ export const LoaderShows: React.FC<Props> = ({ className, children, showContentO
 
     if (isLoading && !showsAreLoaded) {
         return (
-            <div className={className || "flex justify-center items-center py-10"}>
-                <ClimbingBoxLoader color="#4338CA" size={15} /> {}
+            <div className={isLoading ? "flex items-center justify-center min-h-screen" : ""}>
+                {isLoading ? <ClimbingBoxLoader color="#ffffff"/> : children}
             </div>
         );
     }
@@ -32,8 +32,8 @@ export const LoaderShows: React.FC<Props> = ({ className, children, showContentO
         if (showsAreLoaded) {
             return <>{children}</>;
         }
-        return null; 
+        return null;
     }
 
-    return <>{children}</>; 
+    return <>{children}</>;
 }

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Show } from "@/@types/show";
-import { Api } from "@/services/apiClient";
+import { Api } from "@/services/api";
 
 interface ShowStore {
     shows: Show[];
