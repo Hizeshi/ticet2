@@ -13,11 +13,13 @@ import React, { useEffect, useState } from "react";
 import { useShowStore } from "@/stores/show";
 import { Show } from "@/@types/show";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRowsStore } from "@/stores/rows";
 
 export default function BookShowPage() {
   const params = useParams<{ showId: string }>();
   const showId = Number(params.showId);
-
+  const { rows, fetchRows } = useRowsStore();
+ 
   const getShowByIdFromStore = useShowStore((state) => state.getShowById);
   const fetchShowsGlobal = useShowStore((state) => state.fetchShows);
   const allShowsInStore = useShowStore((state) => state._shows);
@@ -25,6 +27,10 @@ export default function BookShowPage() {
   const [isBookingFormVisible, setIsBookingFormVisible] = useState(false);
   const [currentShow, setCurrentShow] = useState<Show | undefined | null>(null);
   const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+   fetchRows(show.concertId, show.id);
+  }, [])
 
   useEffect(() => {
     setIsClient(true);
