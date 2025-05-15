@@ -26,7 +26,8 @@ export const useShowStore = create<ShowStore>((set, get) => ({
 
     fetchShows: async () => {
         if (get().isLoading || get()._shows.length > 0) {
-            if (get()._shows.length > 0) console.log("Shows already in store.");
+            if (get()._shows.length > 0) {
+            }
             return;
         }
         console.log("Fetching shows from API...");
@@ -59,44 +60,48 @@ export const useShowStore = create<ShowStore>((set, get) => ({
     },
 
     filterShows: (filters) => {
-        const { artist, location, date } = filters;
+        const { artist, location, date: dateFilterInput } = filters;
         let filteredShows = [...get()._shows];
 
-        if (artist && artist !== "") {
-            filteredShows = filteredShows.filter((show) => show.artist === artist);
+        if (artist && artist.trim() !== "") {
+            filteredShows = filteredShows.filter((show: Show) => show.artist === artist);
         }
 
-        if (location && location !== "") {
-            filteredShows = filteredShows.filter((show) => show.location === location);
+        if (location && location.trim() !== "") {
+            filteredShows = filteredShows.filter((show: Show) => show.location === location);
         }
 
-        if (date) {
+        if (dateFilterInput && dateFilterInput.trim() !== "") {
+            let filterDateObj: Date | null = null;
             try {
-                const filterDateStr = new Date(date).toISOString().split('T')[0];
+                filterDateObj = new Date(dateFilterInput);
+                if (isNaN(filterDateObj.getTime())) {
+                    console.warn("Invalid date provided in filter input:", dateFilterInput);
+                    filterDateObj = null;
+                }
+            } catch (e) {
+                console.error("Error parsing date from filter input:", dateFilterInput, e);
+                filterDateObj = null;
+            }
 
-                filteredShows = filteredShows.filter((show) => {
-                    let showDateStr: string;
-                    if (typeof show.date === 'string') {
-                        const d = new Date(show.date);
-                        if (!isNaN(d.getTime())) {
-                            showDateStr = d.toISOString().split('T')[0];
-                        } else {
-                            console.warn(`Invalid date format for show ${show.id}: ${show.date}`);
+            if (filterDateObj) {
+                const filterDateComparisonString = filterDateObj.toISOString().split('T')[0];
+
+                filteredShows = filteredShows.filter((show: Show) => {
+                    if (typeof show.date === 'string' && show.date.trim() !== '') {
+                        const showDateObj = new Date(show.date);
+                        if (isNaN(showDateObj.getTime())) {
+                            console.warn(`Invalid date string for show ${show.id}: "${show.date}". Excluding from date filter.`);
                             return false;
                         }
-                    } else if (show.date instanceof Date) {
-                        showDateStr = show.date.toISOString().split('T')[0];
+                        const showDateComparisonString = showDateObj.toISOString().split('T')[0];
+                        return showDateComparisonString === filterDateComparisonString;
                     } else {
-                        console.warn(`Unknown date type for show ${show.id}`);
                         return false;
                     }
-                    return showDateStr === filterDateStr;
                 });
-            } catch (e) {
-                console.error("Error parsing date for filtering:", date, e);
             }
         }
         set({ shows: filteredShows });
-        console.log("Filtered shows:", filteredShows.length);
     },
 }));
