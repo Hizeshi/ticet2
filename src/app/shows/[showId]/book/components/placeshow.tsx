@@ -1,62 +1,89 @@
+"use client"
 import { cn } from "@/lib/utils";
-import { Rows } from "lucide-react";
-import { use } from "react";
+import { useRowsStore } from "@/stores/rows";
+import React, { useEffect } from "react";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Row, Seat } from "@/@types/row";
+
 interface Props {
-  className: string;
+    className?: string;
+
+    onSeatSelect: (seatId: string, rowId: string, seatNumber: string | number, isSelectedCurrently: boolean) => void;
+    selectedSeats: Array<{ rowId: string; seatId: string }>;
 }
-export const PlaceShow: React.FC<Props> = ({ className }) => {
-  const SeatCircle = ({ isPink }: { isPink?: boolean }) => (
-    <div
-      className={cn(
-        "w-6 h-6 rounded-full border flex-shrink-0",
-        isPink ? "bg-rose-200 border-rose-400" : "bg-white border-gray-400"
-      )}
-    ></div>
-  );
 
-  const SeatStaticRow = ({
-    label,
-    seatsCount,
-    pinkIndices = [],
-  }: {
-    label: string;
-    seatsCount: number;
-    pinkIndices?: number[];
-  }) => (
-    <div className="flex items-center space-x-3 mb-2">
-      <div className="w-24 text-sm text-gray-700 text-right shrink-0 pr-1">
-        {label}
-      </div>
-      <div className="flex flex-nowrap space-x-1.5">
-        {Array.from({ length: seatsCount }).map((_, i) => (
-          <SeatCircle key={i} isPink={pinkIndices.includes(i)} />
-        ))}
-      </div>
-    </div>
-  );
-  const rows = useRowsStore((state) => state.rows);
-  return (
-    <div className="lg:col-span-2">
-      <div className="p-6 border rounded-4xl bg-white shadow-md border-gray-950">
-        <div className="flex justify-center mb-6">
-          <div className="bg-green-100 border border-green-300 text-gray-800 py-2 px-20 text-center text-base font-medium">
-            Stage
-          </div>
-        </div>
+export const PlaceShow: React.FC<Props> = ({ className, onSeatSelect, selectedSeats }) => {
+    const params = useParams<{ showId: string, concertId?: string }>();
+    
+    const { rows, isLoading, error, fetchRows } = useRowsStore();
 
-        <div className="space-y-0.5 overflow-x-auto pb-3">
-          {
-            rows.map((row, index) => (
-              <SeatStaticRow
-            label="Stall 01"
-            seatsCount={totalSeatsPerRow}
-            pinkIndices={[]}
-          />
-            ))
-          }
-      
+    const showId = params.showId ? Number(params.showId) : null;
+    const concertId = params.concertId ? Number(params.concertId) : null; 
+
+    useEffect(() => {
+        if (concertId !== null && showId !== null && !isLoading && rows.length === 0) {
+            fetchRows(concertId, showId);
+        }
+    }, [fetchRows, concertId, showId, isLoading, rows.length]);
+
+
+    if (isLoading) {
+        return <div className={cn("p-4 text-center", className)}>Loading seat map...</div>;
+    }
+
+    if (error) {
+        return <div className={cn("p-4 text-center text-destructive", className)}>Error loading seat map: {error}</div>;
+    }
+
+    if (rows.length === 0) {
+        return <div className={cn("p-4 text-center text-muted-foreground", className)}>No seat information available. Ensure concert and show IDs are correct.</div>;
+    }
+
+    return (
+        <div className={cn("p-4 border rounded-lg bg-card shadow-sm", className)}>
+            <div className="bg-gray-300 h-10 w-3/4 mx-auto mb-8 flex items-center justify-center text-sm text-gray-700 rounded">
+                STAGE
+            </div>
+            <div className="space-y-3">
+                {rows.map((row: Row) => (
+                    <div key={row.id} className="flex items-center">
+                        <span className="w-20 mr-3 text-sm text-muted-foreground text-right tabular-nums">{row.name}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                            {row.seats.map((seat: Seat) => {
+                                const isCurrentlySelected = selectedSeats.some(
+                                    s => s.rowId === String(row.id) && s.seatId === String(seat.id)
+                                );
+                                const seatVariant = seat.isUnavailable
+                                    ? 'secondary'
+                                    : isCurrentlySelected
+                                        ? 'default'
+                                        : 'outline';
+
+                                return (
+                                    <Button
+                                        key={seat.id}
+                                        variant={seatVariant as any}
+                                        size="sm"
+                                        className={cn(
+                                            "w-9 h-9 p-0 text-xs tabular-nums",
+                                            seat.isUnavailable ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground" : "",
+                                            isCurrentlySelected && !seat.isUnavailable ? "ring-2 ring-primary ring-offset-1" : ""
+                                        )}
+                                        disabled={seat.isUnavailable}
+                                        onClick={() => 
+                                            !seat.isUnavailable && onSeatSelect(String(seat.id), String(row.id), seat.number, isCurrentlySelected)
+                                        }
+                                        aria-pressed={isCurrentlySelected}
+                                    >
+                                        {seat.number}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
-      </div>
-    </div>
-  );
-};
+    );
+}
